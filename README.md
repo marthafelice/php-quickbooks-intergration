@@ -12,31 +12,34 @@ CREATE TABLE tokens (
     access_token_expiry TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-
-- Below is a sample request body to create an invoice
+-Get your first token that will be stored in the database using oauth.php (POST REQUEST)
+-To get a token you will need to provide an authentication code in the params of you request.
+-An authentication code can be acquired from the quickboojs playground.(This will be needed once)
+-Use to createInvoice.php to create an invoice using the request body entioned below 
+- Below is a sample request body to create an invoice (POST REQUEST)
 {
     "customerRef": {
-        "value": "Test"
+        "value": "Crystal Namanya"
     },
-    "TxnDate": "2024-05-01",
-    "DueDate": "2024-05-15",
+    "TxnDate": "2024-05-23",
+    "DueDate": "2024-06-23",
     "Line": [
         {
+            "Amount": 100.00,
+            "DetailType": "SalesItemLineDetail",
             "SalesItemLineDetail": {
                 "ItemRef": {
-                    "name": "Item 1"
-                },
-                "Qty": 2,
-                "UnitPrice": 50.00
+                    "name": "Item Name 1"
+                }
             }
         },
         {
+            "Amount": 150.00,
+            "DetailType": "SalesItemLineDetail",
             "SalesItemLineDetail": {
                 "ItemRef": {
-                    "name": "Item 2"
-                },
-                "Qty": 1,
-                "UnitPrice": 75.00
+                    "name": "Item Name 2"
+                }
             }
         }
     ]

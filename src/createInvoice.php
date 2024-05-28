@@ -533,34 +533,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Add more invoice data fields as needed
     ];
 
-        // Validate and add line items
-    if (isset($data['Line']) && is_array($data['Line'])) {
-        foreach ($data['Line'] as $line) {
-            if (isset($line['SalesItemLineDetail']['ItemRef']['name'], $line['SalesItemLineDetail']['Qty'], $line['SalesItemLineDetail']['UnitPrice'])) {
-                $invoiceData['Line'][] = [
-                    'Amount' => $line['SalesItemLineDetail']['Qty'] * $line['SalesItemLineDetail']['UnitPrice'],
-                    'DetailType' => 'SalesItemLineDetail',
-                    'SalesItemLineDetail' => [
-                        'ItemRef' => [
-                            'name' => $line['SalesItemLineDetail']['ItemRef']['name'],
-                        ],
-                        'Qty' => $line['SalesItemLineDetail']['Qty'],
-                        'UnitPrice' => $line['SalesItemLineDetail']['UnitPrice'],
-                    ],
-                ];
-            } else {
-                echo json_encode(['error' => 'Invalid line item data']);
-                http_response_code(400);
-                exit;
-            }
-        }
-    } else {
-        echo json_encode(['error' => 'Line items are required']);
-        http_response_code(400);
-        exit;
-    }
-
-
    // Validate invoiceData
    if (!empty($invoiceData['customerRef']['name']) && !empty($invoiceData['TxnDate']) && !empty($invoiceData['DueDate']) && !empty($invoiceData['Line'])) {
     try {
