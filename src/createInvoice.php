@@ -345,7 +345,7 @@ function checkItemExists($itemName) {
             // Parse the XML response
             $xmlData = simplexml_load_string($response->getBody());
             // Check for item existence based on the XML structure
-            $itemExists = (isset($xmlData->QueryResponse->Item)); // Assuming Item element indicates existence
+            $itemExists = (isset($xmlData->QueryResponse->Item)); 
             return $itemExists;
       
         } else {

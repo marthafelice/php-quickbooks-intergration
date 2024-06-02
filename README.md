@@ -34,6 +34,7 @@ CREATE TABLE tokens (
             }
         },
         {
+            "Description":"Created from Api",
             "SalesItemLineDetail": {
                 "ItemRef": {
                     "name": "Item 2"
