@@ -17,29 +17,29 @@ CREATE TABLE tokens (
 -An authentication code can be acquired from the quickboojs playground.(This will be needed once)
 -Use to createInvoice.php to create an invoice using the request body entioned below 
 - Below is a sample request body to create an invoice (POST REQUEST)
-{
+- {
     "customerRef": {
-        "value": "Crystal Namanya"
+        "value": "Test Test Client"
     },
-    "TxnDate": "2024-05-23",
-    "DueDate": "2024-06-23",
+    "TxnDate": "2024-06-02",
+    "DueDate": "2024-06-15",
     "Line": [
         {
-            "Amount": 100.00,
-            "DetailType": "SalesItemLineDetail",
             "SalesItemLineDetail": {
                 "ItemRef": {
-                    "name": "Item Name 1"
-                }
+                    "name": "Item 1"
+                },
+                "Qty": 2,
+                "UnitPrice": 40.00
             }
         },
         {
-            "Amount": 150.00,
-            "DetailType": "SalesItemLineDetail",
             "SalesItemLineDetail": {
                 "ItemRef": {
-                    "name": "Item Name 2"
-                }
+                    "name": "Item 2"
+                },
+                "Qty": 1,
+                "UnitPrice": 25.00
             }
         }
     ]
