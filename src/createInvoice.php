@@ -374,19 +374,19 @@ function createItem($itemName) {
         "Type" => "Inventory",
         "TrackQtyOnHand" => true, 
         "QtyOnHand" => 0, 
+        "InvStartDate" => date('Y-m-d'),
         "IncomeAccountRef" => [
             "name" => "Sales of Product Income", 
-            "value" => "79" // Replace with actual account ID
+
         ],
         "AssetAccountRef" => [
             "name" => "Inventory Asset", 
-            "value" => "81" // Replace with actual account ID
         ],
         "ExpenseAccountRef" => [
             "name" => "Cost of Goods Sold", 
-            "value" => "80" // Replace with actual account ID
+
         ],
-        "InvStartDate" => "2024-01-01" // Example start date
+
            
     ];
 
@@ -446,28 +446,32 @@ function create_invoice(array $invoiceData) {
         }
     
 
-          // Check if each item in the invoice exists, and create it if not
+        $lineItems = [];
+        $totalAmount = 0;
+
+        // Validate and process each line item
         foreach ($invoiceData['Line'] as $line) {
             $itemName = $line['SalesItemLineDetail']['ItemRef']['name'];
-            // print_r($itemName);
-            $itemExists = checkItemExists($itemName);
+            $quantity = $line['SalesItemLineDetail']['Qty'];
+            $rate = $line['SalesItemLineDetail']['UnitPrice'];
+            $amount = $quantity * $rate;
 
-            if (!$itemName) {
-                return ['error' => 'Item name is required'];
-            }
+            // Append line item to the array
+            $lineItems[] = [
+                'Description' => $line['Description'] ?? '', // Optional description
+                'Amount' => $amount,
+                'DetailType' => 'SalesItemLineDetail',
+                'SalesItemLineDetail' => [
+                    'ItemRef' => [
+                        'name' => $itemName,
+                    ],
+                    'Qty' => $quantity,
+                    'UnitPrice' => $rate,
+                ],
+            ];
 
-
-            if (!$itemExists) {
-
-                $itemCreationResult = createItem($itemName);
-                // echo json_encode($itemCreationResult);
-
-                // Check if item creation was successful
-                if (isset($itemCreationResult['error'])) {
-                    // If item creation failed, return error
-                    return $itemCreationResult;
-                }
-            }
+            // Add to the total amount
+            $totalAmount += $amount;
         }
         
         // Prepare invoice data
@@ -477,7 +481,8 @@ function create_invoice(array $invoiceData) {
             ],
             'TxnDate' => $invoiceData['TxnDate'],
             'DueDate' => $invoiceData['DueDate'],
-            'Line' => $invoiceData['Line'],
+            'TotalAmt' => $totalAmount, // Total amount of the invoice
+            'Line' => $lineItems,
         ];
 
     
@@ -518,36 +523,80 @@ function create_invoice(array $invoiceData) {
     }
 }
       
-// Example usage within a request handling context
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
+    try {
+        // Retrieve and decode JSON data from the request body
+        $data = json_decode(file_get_contents('php://input'), true);
 
-    // Define invoiceData
+        // Validate and prepare invoice data
+        $invoiceData = prepareInvoiceData($data);
+
+        // Create the invoice
+        $invoiceResult = create_invoice($invoiceData);
+
+        // Return the result as JSON response
+        echo json_encode($invoiceResult);
+    } catch (Exception $e) {
+        // Handle any exceptions and return appropriate error response
+        echo json_encode(['error' => $e->getMessage()]);
+        http_response_code(500);
+    }
+} else {
+    // Return error response for invalid request method
+    echo json_encode(['error' => 'Invalid request method']);
+    http_response_code(405);
+}
+
+function prepareInvoiceData($data) {
+    // Define invoiceData array
     $invoiceData = [
         'customerRef' => [
             'name' => isset($data['customerRef']['value']) ? $data['customerRef']['value'] : null,
         ],
         'TxnDate' => isset($data['TxnDate']) ? $data['TxnDate'] : null,
         'DueDate' => isset($data['DueDate']) ? $data['DueDate'] : null,
-        'Line' => isset($data['Line']) ? $data['Line'] : null,
-        // Add more invoice data fields as needed
+        'Line' => [],
     ];
 
-   // Validate invoiceData
-   if (!empty($invoiceData['customerRef']['name']) && !empty($invoiceData['TxnDate']) && !empty($invoiceData['DueDate']) && !empty($invoiceData['Line'])) {
-    try {
-        // Create the invoice
-        $invoiceResult = create_invoice($invoiceData);
-        echo json_encode($invoiceResult);
-    } catch (Exception $e) {
-        echo json_encode(['error' => $e->getMessage()]);
-        http_response_code(500);
+    // Validate and add line items
+    if (isset($data['Line']) && is_array($data['Line'])) {
+        foreach ($data['Line'] as $line) {
+            if (isset($line['SalesItemLineDetail']['ItemRef']['name'], $line['SalesItemLineDetail']['Qty'], $line['SalesItemLineDetail']['UnitPrice'])) {
+                $amount = $line['SalesItemLineDetail']['Qty'] * $line['SalesItemLineDetail']['UnitPrice'];
+                $lineItem = [
+                    'Description' => $line['Description'] ?? '',
+                    'Amount' => $amount,
+                    'DetailType' => 'SalesItemLineDetail',
+                    'SalesItemLineDetail' => [
+                        'ItemRef' => [
+                            'name' => $line['SalesItemLineDetail']['ItemRef']['name'],
+                        ],
+                        'Qty' => $line['SalesItemLineDetail']['Qty'],
+                        'UnitPrice' => $line['SalesItemLineDetail']['UnitPrice'],
+                    ],
+                ];
+                $invoiceData['Line'][] = $lineItem;
+            } else {
+                // Return error response for invalid line item data
+                echo json_encode(['error' => 'Invalid line item data']);
+                http_response_code(400);
+                exit;
+            }
+        }
+    } else {
+        // Return error response for missing line items
+        echo json_encode(['error' => 'Line items are required']);
+        http_response_code(400);
+        exit;
     }
-} else {
-    echo json_encode(['error' => 'Invalid request data']);
-    http_response_code(400);
-}
-} else {
-echo json_encode(['error' => 'Invalid request method']);
-http_response_code(405);
+
+    // Validate invoiceData
+    if (empty($invoiceData['customerRef']['name']) || empty($invoiceData['TxnDate']) || empty($invoiceData['DueDate']) || empty($invoiceData['Line'])) {
+        // Return error response for invalid request data
+        echo json_encode(['error' => 'Invalid request data']);
+        http_response_code(400);
+        exit;
+    }
+
+    return $invoiceData;
 }
